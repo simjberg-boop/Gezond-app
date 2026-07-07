@@ -1,0 +1,7 @@
+# Configuratie voor Netlify: publiceer de map zoals hij is (geen buildstap)
+# en vind de serverfuncties in netlify/functions.
+[build]
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
