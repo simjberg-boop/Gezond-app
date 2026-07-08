@@ -8071,24 +8071,29 @@ var send_reminders_default = async () => {
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit", hour12: false, weekday: "short" }).formatToParts(/* @__PURE__ */ new Date());
   const get = (t) => parts.find((p) => p.type === t)?.value;
   const hhmm = `${get("hour")}:${get("minute")}`;
-  const weekend = ["Sat", "Sun"].includes(get("weekday"));
-  const tijden = weekend ? ["09:00", "10:00", "11:00", "12:00", "15:00", "16:00"] : ["09:00", "10:00", "11:00", "12:00", "15:00", "16:00"];
-  let title = null, body = "";
-  if (hhmm === "16:30") {
-    title = "Tijd voor de afsluiter";
-    body = "Drie oefeningen achter elkaar en je dag is compleet.";
-  } else if (tijden.includes(hhmm)) {
-    title = `Beweegmoment van ${hhmm}`;
-    body = "Twee tot drie minuten. Open de app en pak je oefening.";
-  }
-  if (!title)
-    return new Response(`geen moment om ${hhmm}`);
+  const STANDAARD = ["09:00", "10:00", "11:00", "12:00", "15:00", "16:00"];
+  const plus30 = (t) => {
+    const [h, m] = t.split(":").map(Number);
+    return m >= 30 ? `${String(h + 1).padStart(2, "0")}:00` : `${String(h).padStart(2, "0")}:30`;
+  };
   const store = getStore("push-subs");
   const { blobs } = await store.list();
   let sent = 0;
   for (const b of blobs) {
     const sub = await store.get(b.key, { type: "json" });
     if (!sub)
+      continue;
+    const tijden = Array.isArray(sub.tijden) && sub.tijden.length >= 3 ? sub.tijden : STANDAARD;
+    const finisher = plus30(tijden[tijden.length - 1]);
+    let title = null, body = "";
+    if (hhmm === finisher) {
+      title = "Tijd voor de afsluiter";
+      body = "Drie oefeningen achter elkaar en je dag is compleet.";
+    } else if (tijden.includes(hhmm)) {
+      title = `Beweegmoment van ${hhmm}`;
+      body = "Twee tot drie minuten. Open de app en pak je oefening.";
+    }
+    if (!title)
       continue;
     try {
       await import_web_push.default.sendNotification(sub, JSON.stringify({ title, body }));
@@ -8098,7 +8103,7 @@ var send_reminders_default = async () => {
         await store.delete(b.key);
     }
   }
-  return new Response(`verzonden: ${sent}`);
+  return new Response(`verzonden om ${hhmm}: ${sent}`);
 };
 var config = { schedule: "0,30 * * * *" };
 export {
