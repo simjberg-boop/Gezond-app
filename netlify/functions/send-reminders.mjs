@@ -8086,7 +8086,10 @@ var send_reminders_default = async () => {
     const tijden = Array.isArray(sub.tijden) && sub.tijden.length >= 3 ? sub.tijden : STANDAARD;
     const finisher = plus30(tijden[tijden.length - 1]);
     let title = null, body = "";
-    if (hhmm === finisher) {
+    if (sub.stappenTijd && hhmm === sub.stappenTijd) {
+      title = "Hoeveel stappen vandaag?";
+      body = "Vul ze in de app in, dan tellen ze mee als verbranding.";
+    } else if (hhmm === finisher) {
       title = "Tijd voor de afsluiter";
       body = "Drie oefeningen achter elkaar en je dag is compleet.";
     } else if (tijden.includes(hhmm)) {
